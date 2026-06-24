@@ -1,96 +1,73 @@
 import { Pie } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  ArcElement,
-  Tooltip,
-  Legend,
-} from 'chart.js';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
+const COLORS = [
+  '#22d3ee', '#818cf8', '#f472b6', '#fbbf24',
+  '#34d399', '#f87171', '#a78bfa', '#38bdf8',
+];
 
 interface PieChartProps {
   labels: string[];
   amounts: number[];
-  label?: string;
 }
 
-export default function PieChartExpenses({ labels, amounts, label = 'Data' }: PieChartProps) {
+function PieBase({ labels, amounts }: PieChartProps) {
+  const total = amounts.reduce((s, a) => s + a, 0);
   return (
-    <div style={{ maxWidth: '400px', margin: '0 auto' }}>
-      <Pie
-      data={{
-        labels,
-        datasets: [
-          {
-            label,
-            data: amounts,
-            backgroundColor: [
-              'rgba(255, 99, 132, 0.2)',
-              'rgba(54, 162, 235, 0.2)',
-              'rgba(255, 206, 86, 0.2)',
-              'rgba(75, 192, 192, 0.2)',
-              'rgba(153, 102, 255, 0.2)',
-              'rgba(255, 159, 64, 0.2)',
-            ],
-            borderColor: [
-              'rgba(255, 99, 132, 1)',
-              'rgba(54, 162, 235, 1)',
-              'rgba(255, 206, 86, 1)',
-              'rgba(75, 192, 192, 1)',
-              'rgba(153, 102, 255, 1)',
-              'rgba(255, 159, 64, 1)',
-            ],
-            borderWidth: 1,
-          },
-        ],
-      }}
-      options={{
-        plugins: {
-          legend: { labels: { color: '#fff' } }
-        }
-      }}
-    />
-    </div>
-  )
-}
-
-export function PieChartIncomes({ labels, amounts, label = 'Data' }: PieChartProps) {
-  return (
-    <div style={{ maxWidth: '400px', margin: '0 auto' }}>
-      <Pie
-        data={{
-          labels,
-          datasets: [
-            {
-              label,
+    <div className="flex flex-col md:flex-row items-center gap-6 w-full">
+      <div style={{ width: 220, height: 220, flexShrink: 0 }}>
+        <Pie
+          data={{
+            labels,
+            datasets: [{
               data: amounts,
-              backgroundColor: [
-                'rgba(255, 99, 132, 0.2)',
-                'rgba(54, 162, 235, 0.2)',
-                'rgba(255, 206, 86, 0.2)',
-                'rgba(75, 192, 192, 0.2)',
-                'rgba(153, 102, 255, 0.2)',
-                'rgba(255, 159, 64, 0.2)',
-              ],
-              borderColor: [
-                'rgba(255, 99, 132, 1)',
-                'rgba(54, 162, 235, 1)',
-                'rgba(255, 206, 86, 1)',
-                'rgba(75, 192, 192, 1)',
-                'rgba(153, 102, 255, 1)',
-                'rgba(255, 159, 64, 1)',
-              ],            
-              borderWidth: 1,
+              backgroundColor: COLORS.map(c => c + '33'),
+              borderColor: COLORS,
+              borderWidth: 2,
+              hoverOffset: 8,
+            }],
+          }}
+          options={{
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: '#0F1729',
+                borderColor: '#1E2A42',
+                borderWidth: 1,
+                titleColor: '#fff',
+                bodyColor: '#9ca3af',
+                callbacks: {
+                  label: ctx => ` $${(ctx.parsed as number).toFixed(2)} (${total > 0 ? Math.round((ctx.parsed as number) / total * 100) : 0}%)`,
+                },
+              },
             },
-          ],
-        }}
-        options={{
-          plugins: {
-            legend: { labels: { color: '#fff' } }
-          }
-        }}
-      />
+          }}
+        />
+      </div>
+      <div className="flex flex-col gap-2 flex-1 w-full">
+        {labels.map((label, i) => (
+          <div key={i} className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+              <span className="text-gray-300 text-sm truncate">{label}</span>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className="text-white text-sm font-medium">${amounts[i].toFixed(2)}</span>
+              <span className="text-gray-500 text-xs w-10 text-right">{total > 0 ? Math.round(amounts[i] / total * 100) : 0}%</span>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
-  )
+  );
+}
+
+export default function PieChartExpenses({ labels, amounts }: PieChartProps) {
+  return <PieBase labels={labels} amounts={amounts} />;
+}
+
+export function PieChartIncomes({ labels, amounts }: PieChartProps) {
+  return <PieBase labels={labels} amounts={amounts} />;
 }

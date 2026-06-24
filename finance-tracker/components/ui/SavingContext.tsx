@@ -11,9 +11,9 @@ export interface Saving {
 
 interface SavingContextType {
   savings: Saving[];
-  fetchSavings: (userId: string) => Promise<void>;
-  addSaving: (userId: string, savingData: Partial<Saving>) => Promise<void>;
-  updateSaving: (savingId: string, userId: string, updateData: Partial<Saving>) => Promise<void>;
+  fetchSavings: () => Promise<void>;
+  addSaving: (savingData: Partial<Saving>) => Promise<void>;
+  updateSaving: (savingId: string, updateData: Partial<Saving>) => Promise<void>;
 }
 
 const SavingContext = createContext<SavingContextType | undefined>(undefined);
@@ -21,77 +21,57 @@ const SavingContext = createContext<SavingContextType | undefined>(undefined);
 export const SavingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [savings, setSavings] = useState<Saving[]>([]);
 
-  const fetchSavings = useCallback(async (userId: string) => {
+  // Sin userId — lo lee el servidor desde la sesión
+  const fetchSavings = useCallback(async () => {
     try {
-      const response = await fetch(`/api/actions/saving/getSavings?userId=${userId}`);
+      const response = await fetch('/api/actions/saving/getSavings');
       const data = await response.json();
       if (response.ok) {
         setSavings(data);
       } else {
-        alert('Error fetching savings');
+        console.error('Error fetching savings:', data.message);
       }
     } catch (error) {
-      alert('Error fetching savings');
+      console.error('Error fetching savings:', error);
     }
   }, []);
 
-  const addSaving = useCallback(async (userId: string, savingData: Partial<Saving>) => {
+  const addSaving = useCallback(async (savingData: Partial<Saving>) => {
     try {
       const response = await fetch('/api/actions/saving', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ ...savingData, userId }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(savingData),
       });
       if (response.ok) {
-        await fetchSavings(userId);
+        await fetchSavings();
       } else {
         const data = await response.json();
-        alert(data.message || 'Error adding saving');
+        console.error('Error adding saving:', data.message);
       }
     } catch (error) {
-      alert('Error adding saving');
-    } finally {
-      setSavings((prevSavings) => {
-        if (prevSavings) {
-          return [...prevSavings, savingData as Saving];
-        } else {
-          return [savingData as Saving];
-        }
-      });
+      console.error('Error adding saving:', error);
     }
-  }, []);
+  }, [fetchSavings]);
 
-  const updateSaving = useCallback(async (savingId: string, userId: string, updateData: Partial<Saving>) => {
+  const updateSaving = useCallback(async (savingId: string, updateData: Partial<Saving>) => {
     try {
-      const response = await fetch('/api/actions/saving/${savingId}', {
+      // Fix: template string con backticks correctos
+      const response = await fetch(`/api/actions/saving/${savingId}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updateData),
       });
       if (response.ok) {
-        await fetchSavings(userId);
+        await fetchSavings();
       } else {
         const data = await response.json();
-        alert(data.message || 'Error updating saving');
+        console.error('Error updating saving:', data.message);
       }
     } catch (error) {
-      alert('Error updating saving');
-    } finally {
-      setSavings((prevSavings) =>
-        prevSavings.map((saving) => {
-          if (saving._id === savingId) {
-            return { ...saving, ...updateData };
-          } else {
-            return saving;  
-          }
-        }
-      ));
+      console.error('Error updating saving:', error);
     }
-  }, []);
+  }, [fetchSavings]);
 
   return (
     <SavingContext.Provider value={{ savings, fetchSavings, addSaving, updateSaving }}>
